@@ -1,0 +1,418 @@
+<!DOCTYPE html>
+<html lang="ja">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>英単語帳 Section 1-8 赤シート位置固定版</title>
+    <style>
+        :root {
+            --primary-color: #e74c3c;
+            --bg-color: #f8f9fa;
+            --text-color: #2c3e50;
+            --card-bg: #ffffff;
+            --border-color: #dee2e6;
+            --sheet-color: rgba(255, 0, 0, 0.99); 
+        }
+        body.dark-mode {
+            --bg-color: #121212;
+            --text-color: #e0e0e0;
+            --card-bg: #1e1e1e;
+            --border-color: #333;
+        }
+
+        body {
+            font-family: 'Helvetica Neue', Arial, 'Hiragino Kaku Gothic ProN', 'Hiragino Sans', sans-serif;
+            background-color: var(--bg-color);
+            color: var(--text-color);
+            margin: 0;
+            padding-bottom: 100px;
+            user-select: none;
+            letter-spacing: 0.05em;
+        }
+
+        #progress-container {
+            position: fixed;
+            top: 0;
+            left: 0;
+            width: 100%;
+            height: 6px;
+            background: #eee;
+            z-index: 10002;
+        }
+        #progress-bar {
+            width: 0%;
+            height: 100%;
+            background: #3498db;
+            transition: width 0.2s;
+        }
+
+        .container { 
+            max-width: 500px; 
+            margin: 0 auto; 
+            padding: 10px; 
+        }
+
+        .sticky-header {
+            position: sticky;
+            top: 6px;
+            background: var(--bg-color);
+            z-index: 1000;
+            padding: 10px;
+            border-bottom: 2px solid var(--border-color);
+            box-shadow: 0 2px 5px rgba(0,0,0,0.1);
+        }
+        .header-inner {
+            max-width: 500px;
+            margin: 0 auto;
+        }
+
+        .speed-panel {
+            display: flex;
+            align-items: center;
+            justify-content: center;
+            gap: 10px;
+            margin-bottom: 8px;
+            background: rgba(0,0,0,0.05);
+            padding: 8px;
+            border-radius: 10px;
+        }
+        .shuffle-panel {
+            display: flex;
+            justify-content: center;
+            gap: 10px;
+            margin-bottom: 10px;
+        }
+        .shuffle-btn {
+            padding: 6px 15px;
+            border-radius: 20px;
+            border: 1px solid #3498db;
+            background: white;
+            color: #3498db;
+            font-size: 0.85em;
+            font-weight: bold;
+            cursor: pointer;
+            letter-spacing: 0.08em;
+        }
+        .shuffle-btn.active { background: #3498db; color: white; }
+
+        .speed-control-btn {
+            width: 36px;
+            height: 36px;
+            border: none;
+            background: #3498db;
+            color: white;
+            border-radius: 50%;
+            font-size: 1.1em;
+            cursor: pointer;
+        }
+        .speed-display { font-weight: bold; min-width: 70px; text-align: center; font-size: 0.9em; }
+        .stop-btn { padding: 6px 12px; border-radius: 8px; border: 2px solid #e74c3c; background: white; color: #e74c3c; font-weight: bold; cursor: pointer; }
+        .stop-btn.active { background: #e74c3c; color: white; }
+
+        .tabs {
+            display: flex;
+            flex-wrap: wrap;
+            gap: 5px;
+            padding: 5px 0;
+            justify-content: center;
+        }
+        .tab-btn {
+            padding: 6px 12px;
+            border: 1px solid #ddd;
+            background: var(--card-bg);
+            color: var(--text-color);
+            border-radius: 15px;
+            cursor: pointer;
+            font-weight: bold;
+            font-size: 0.85em;
+            letter-spacing: 0.05em;
+        }
+        .tab-btn.active { background: var(--primary-color); color: white; border-color: var(--primary-color); }
+
+        table { width: 100%; border-collapse: collapse; background: var(--card-bg); table-layout: fixed; }
+        th, td { border: 1px solid var(--border-color); padding: 16px 10px; text-align: left; overflow: hidden; }
+        th { background: #34495e; color: white; font-size: 0.9em; letter-spacing: 0.2em; text-align: center; }
+
+        .word-no { color: #888; font-size: 0.8em; margin-right: 5px; display: inline-block; width: 25px; letter-spacing: 0; }
+        .word-eng { font-weight: bold; cursor: pointer; font-size: 1.1em; letter-spacing: 0.06em; }
+        .word-jp { color: #ff0000 !important; font-weight: bold; filter: contrast(200%); letter-spacing: 0.15em; }
+        
+        .fav-star { cursor: pointer; color: #ccc; font-size: 1.5em; text-align: center; display: block; }
+        .fav-star.active { color: #f1c40f; }
+
+        #red-sheet {
+            position: fixed;
+            top: 250px; /* デフォルト値 */
+            left: 50%;
+            transform: translateX(-50%);
+            width: 90%;
+            max-width: 460px;
+            height: 600px;
+            max-height: 80vh;
+            background-color: var(--sheet-color);
+            border: 1px solid #900;
+            border-radius: 12px;
+            z-index: 9999;
+            touch-action: none;
+            cursor: move;
+            box-shadow: 0 10px 30px rgba(0,0,0,0.4);
+        }
+
+        .mode-fab {
+            position: fixed;
+            bottom: 20px;
+            right: 20px;
+            width: 45px;
+            height: 45px;
+            background: #34495e;
+            color: white;
+            border-radius: 50%;
+            display: flex;
+            align-items: center;
+            justify-content: center;
+            cursor: pointer;
+            z-index: 10001;
+        }
+
+        #view-title {
+            text-align: center; 
+            font-size: 1.3em; 
+            letter-spacing: 0.3em; 
+            margin: 20px 0;
+            text-transform: uppercase;
+        }
+    </style>
+</head>
+<body>
+
+<div id="progress-container"><div id="progress-bar"></div></div>
+
+<div class="sticky-header">
+    <div class="header-inner">
+        <div class="speed-panel">
+            <button class="stop-btn" id="stop-btn" onclick="toggleStop()">停止</button>
+            <button class="speed-control-btn" onclick="adjustSpeed(-0.5)">ー</button>
+            <div class="speed-display" id="speed-val">速度: 0.0</div>
+            <button class="speed-control-btn" onclick="adjustSpeed(0.5)">＋</button>
+        </div>
+        <div class="shuffle-panel">
+            <button class="shuffle-btn" id="shuffle-on" onclick="setShuffle(true)">🔀 シャッフル</button>
+            <button class="shuffle-btn active" id="shuffle-off" onclick="setShuffle(false)">📋 順番通り</button>
+        </div>
+        <div id="tabs" class="tabs">
+            <button class="tab-btn" style="border:2px solid #f1c40f;" id="btn-weak" onclick="showWeak()">🔥 苦手</button>
+        </div>
+    </div>
+</div>
+
+<div id="red-sheet"></div>
+
+<div class="container">
+    <h2 id="view-title">Section 1</h2>
+    <table>
+        <thead>
+            <tr>
+                <th style="width:15%;">苦手</th>
+                <th style="width:45%;">英単語</th>
+                <th style="width:40%;">意味</th>
+            </tr>
+        </thead>
+        <tbody id="word-list"></tbody>
+    </table>
+</div>
+
+<div class="mode-fab" onclick="document.body.classList.toggle('dark-mode')">🌓</div>
+
+<script>
+// セクションデータ (Section 1 - 8)
+const sections = [
+    { name: "S1", full: "Section 1", words: [{w:"create",a:"を創り出す"},{w:"increase",a:"増加する"},{w:"improve",a:"を向上させる"},{w:"mean",a:"を意味する"},{w:"own",a:"を所有している"},{w:"include",a:"を含む"},{w:"consider",a:"を見なす"},{w:"allow",a:"を許す"},{w:"suggest",a:"を提案する"},{w:"produce",a:"を生産する"},{w:"decide",a:"を決める"},{w:"offer",a:"を提供する"},{w:"require",a:"を要求する"},{w:"share",a:"を共有する"},{w:"store",a:"を保存する"},{w:"tend",a:"傾向がある"},{w:"concern",a:"心配している"},{w:"describe",a:"について述べる"},{w:"involve",a:"を関与させる"},{w:"reduce",a:"を減らす"},{w:"design",a:"を設計する"},{w:"force",a:"に強いる"},{w:"limit",a:"を制限する"},{w:"bear",a:"に耐える"},{w:"affect",a:"に影響を及ぼす"},{w:"deal",a:"を処理する"},{w:"avoid",a:"を避ける"},{w:"relate",a:"を関連づける"},{w:"realize",a:"に気づく"},{w:"encourage",a:"を奨励する"},{w:"compare",a:"を比較する"},{w:"measure",a:"を測る"},{w:"exist",a:"存在する"},{w:"mark",a:"に印をつける"},{w:"challenge",a:"に異議を唱える"},{w:"depend",a:"頼る"},{w:"object",a:"反対する"},{w:"demand",a:"を要求する"},{w:"found",a:"を設立する"},{w:"complete",a:"を完成させる"},{w:"idea",a:"考え"},{w:"accord",a:"一致"},{w:"company",a:"会社"},{w:"interest",a:"興味"},{w:"research",a:"研究"},{w:"cause",a:"原因"},{w:"reason",a:"理由"},{w:"effect",a:"影響"},{w:"influence",a:"影響（力）"},{w:"situation",a:"状況"},{w:"environment",a:"環境"},{w:"skill",a:"技能"},{w:"matter",a:"事柄"},{w:"view",a:"見解"},{w:"value",a:"価値"},{w:"species",a:"種"},{w:"thought",a:"考え"},{w:"knowledge",a:"知識"},{w:"memory",a:"記憶"},{w:"practice",a:"実践"},{w:"benefit",a:"利益"},{w:"theory",a:"学説"},{w:"issue",a:"問題点"},{w:"experiment",a:"実験"},{w:"article",a:"記事"},{w:"focus",a:"焦点"},{w:"subject",a:"話題"},{w:"project",a:"計画"},{w:"quality",a:"質"},{w:"role",a:"役割"},{w:"term",a:"用語"},{w:"statement",a:"声明"},{w:"material",a:"材料"},{w:"evidence",a:"証拠"},{w:"source",a:"源"},{w:"community",a:"共同社会"},{w:"technology",a:"科学技術"},{w:"culture",a:"文化"},{w:"appropriate",a:"適切な"},{w:"likely",a:"ありそうな"},{w:"possible",a:"可能な"},{w:"individual",a:"個々の"},{w:"public",a:"公の"},{w:"common",a:"共通の"},{w:"certain",a:"確信して"},{w:"similar",a:"似ている"},{w:"recent",a:"最近の"},{w:"major",a:"主要な"},{w:"patient",a:"忍耐強い"},{w:"particular",a:"特定の"},{w:"physical",a:"身体の"},{w:"various",a:"さまざまな"},{w:"available",a:"手に入る"},{w:"native",a:"出生地の"},{w:"political",a:"政治上の"},{w:"due",a:"予定された"},{w:"blank",a:"空白の"},{w:"ancient",a:"古代の"},{w:"correct",a:"正しい"},{w:"despite",a:"～にもかかわらず"}] },
+    { name: "S2", full: "Section 2", words: [{w:"notice",a:"に気づく"},{w:"refer",a:"参照する"},{w:"approach",a:"近づく"},{w:"wonder",a:"かなと思う"},{w:"imagine",a:"想像する"},{w:"recognize",a:"認める"},{w:"solve",a:"解決する"},{w:"occur",a:"起こる"},{w:"argue",a:"主張する"},{w:"claim",a:"主張する"},{w:"express",a:"表す"},{w:"draw",a:"引き出す"},{w:"waste",a:"浪費する"},{w:"advance",a:"進歩させる"},{w:"spread",a:"広める"},{w:"prepare",a:"準備する"},{w:"gain",a:"獲得する"},{w:"achieve",a:"達成する"},{w:"establish",a:"確立する"},{w:"supply",a:"供給する"},{w:"suppose",a:"と思う"},{w:"perform",a:"行う"},{w:"prefer",a:"好む"},{w:"determine",a:"決定する"},{w:"treat",a:"扱う"},{w:"prove",a:"証明する"},{w:"apply",a:"適用する"},{w:"mention",a:"言及する"},{w:"communicate",a:"伝える"},{w:"contain",a:"含む"},{w:"contact",a:"連絡を取る"},{w:"regard",a:"見なす"},{w:"respect",a:"尊敬する"},{w:"search",a:"捜す"},{w:"connect",a:"つなぐ"},{w:"decline",a:"減少する"},{w:"prevent",a:"妨げる"},{w:"suffer",a:"苦しむ"},{w:"survive",a:"生き残る"},{w:"publish",a:"出版する"},{w:"opportunity",a:"機会"},{w:"task",a:"仕事"},{w:"industry",a:"産業"},{w:"medium",a:"媒体"},{w:"economy",a:"経済"},{w:"policy",a:"政策"},{w:"account",a:"説明"},{w:"trade",a:"貿易"},{w:"model",a:"模範"},{w:"figure",a:"数字"},{w:"cell",a:"細胞"},{w:"image",a:"画像"},{w:"emotion",a:"感情"},{w:"stress",a:"ストレス"},{w:"decade",a:"10年間"},{w:"range",a:"範囲"},{w:"character",a:"性格"},{w:"advantage",a:"利点"},{w:"phrase",a:"句"},{w:"damage",a:"損害"},{w:"impact",a:"影響"},{w:"method",a:"方法"},{w:"resource",a:"資源"},{w:"region",a:"地域"},{w:"medicine",a:"薬"},{w:"detail",a:"詳細"},{w:"feature",a:"特徴"},{w:"function",a:"機能"},{w:"access",a:"利用"},{w:"item",a:"品目"},{w:"income",a:"収入"},{w:"attitude",a:"態度"},{w:"site",a:"用地"},{w:"aspect",a:"側面"},{w:"structure",a:"構造"},{w:"habit",a:"習慣"},{w:"link",a:"関連"},{w:"instance",a:"実例"},{w:"positive",a:"肯定的な"},{w:"negative",a:"否定的な"},{w:"complex",a:"複雑な"},{w:"current",a:"現在の"},{w:"mental",a:"精神の"},{w:"specific",a:"特定の"},{w:"significant",a:"重要な"},{w:"essential",a:"必要不可欠な"},{w:"official",a:"公用の"},{w:"financial",a:"財政上の"},{w:"academic",a:"学問の"},{w:"aware",a:"気づいて"},{w:"worth",a:"に値する"},{w:"potential",a:"潜在的な"},{w:"active",a:"積極的な"},{w:"digital",a:"デジタル"},{w:"mobile",a:"可動式の"},{w:"novel",a:"斬新な"},{w:"plastic",a:"柔軟な"},{w:"chemical",a:"化学の"},{w:"necessary",a:"必要な"},{w:"eventually",a:"結局は"}] },
+    { name: "S3", full: "Section 3", words: [{w:"identify",a:"を特定する"},{w:"represent",a:"を代表する"},{w:"indicate",a:"を指し示す"},{w:"manage",a:"を管理する"},{w:"attend",a:"に出席する"},{w:"maintain",a:"を維持する"},{w:"survey",a:"を調査する"},{w:"replace",a:"に取って代わる"},{w:"sort",a:"を分類する"},{w:"conduct",a:"を実施する"},{w:"associate",a:"を結び付ける"},{w:"attempt",a:"を試みる"},{w:"promote",a:"を促進する"},{w:"earn",a:"を稼ぐ"},{w:"unite",a:"を団結させる"},{w:"feed",a:"を養う"},{w:"seek",a:"を追い求める"},{w:"observe",a:"を観察する"},{w:"reveal",a:"を明らかにする"},{w:"estimate",a:"を推定する"},{w:"reflect",a:"を反映する"},{w:"attract",a:"を引きつける"},{w:"decrease",a:"を減少させる"},{w:"ignore",a:"を無視する"},{w:"match",a:"に合う"},{w:"define",a:"を定義する"},{w:"adapt",a:"を適応させる"},{w:"contribute",a:"を貢献する"},{w:"exchange",a:"を交換する"},{w:"display",a:"を展示する"},{w:"respond",a:"に反応する"},{w:"hide",a:"を隠す"},{w:"doubt",a:"を疑う"},{w:"remove",a:"を取り除く"},{w:"wind",a:"を巻く"},{w:"assume",a:"を仮定する"},{w:"relax",a:"をくつろがせる"},{w:"satisfy",a:"を満足させる"},{w:"desire",a:"を強く望む"},{w:"succeed",a:"を成功する"},{w:"concept",a:"概念"},{w:"fashion",a:"流行"},{w:"device",a:"装置"},{w:"charge",a:"料金"},{w:"contrast",a:"対照"},{w:"colleague",a:"同僚"},{w:"pain",a:"苦痛"},{w:"bill",a:"請求書"},{w:"content",a:"内容"},{w:"section",a:"部門"},{w:"audience",a:"聴衆"},{w:"surface",a:"表面"},{w:"crop",a:"作物"},{w:"topic",a:"話題"},{w:"technique",a:"技術"},{w:"status",a:"地位"},{w:"option",a:"選択肢"},{w:"reward",a:"報酬"},{w:"race",a:"人種"},{w:"crime",a:"罪"},{w:"conflict",a:"争い"},{w:"struggle",a:"闘い"},{w:"context",a:"文脈"},{w:"debate",a:"討論"},{w:"fuel",a:"燃料"},{w:"pollution",a:"汚染"},{w:"trend",a:"傾向"},{w:"balance",a:"均衡"},{w:"traffic",a:"交通"},{w:"strategy",a:"戦略"},{w:"basis",a:"基礎"},{w:"consequence",a:"結果"},{w:"aim",a:"目的"},{w:"ancestor",a:"祖先"},{w:"gene",a:"遺伝子"},{w:"track",a:"跡"},{w:"revolution",a:"革命"},{w:"progress",a:"進歩"},{w:"cognitive",a:"認知の"},{w:"ideal",a:"理想的な"},{w:"efficient",a:"効率的な"},{w:"universal",a:"普遍的な"},{w:"vast",a:"莫大な"},{w:"extra",a:"追加の"},{w:"entire",a:"全体の"},{w:"familiar",a:"精通している"},{w:"obvious",a:"明らかな"},{w:"moral",a:"道徳上の"},{w:"ordinary",a:"普通の"},{w:"equal",a:"等しい"},{w:"previous",a:"以前の"},{w:"false",a:"間違った"},{w:"rare",a:"まれな"},{w:"legal",a:"法律の"},{w:"independent",a:"独立した"},{w:"extreme",a:"極端な"},{w:"actual",a:"実際の"},{w:"willing",a:"いとわない"},{w:"urban",a:"都市の"},{w:"whereas",a:"〜する一方で"}] },
+    { name: "S4", full: "Section 4", words: [{w:"predict",a:"を予測する"},{w:"examine",a:"を調べる"},{w:"trust",a:"を信頼する"},{w:"stick",a:"を動けなくする"},{w:"emerge",a:"現れる"},{w:"vary",a:"さまざまである"},{w:"release",a:"を放出する"},{w:"divide",a:"を分ける"},{w:"enable",a:"可能にする"},{w:"judge",a:"判断する"},{w:"rely",a:"頼る"},{w:"engage",a:"従事させる"},{w:"shift",a:"を変える"},{w:"adopt",a:"を採用する"},{w:"acquire",a:"を得る"},{w:"expand",a:"拡大する"},{w:"refuse",a:"を拒む"},{w:"strike",a:"の心を打つ"},{w:"repeat",a:"繰り返す"},{w:"consume",a:"を消費する"},{w:"confuse",a:"を混同する"},{w:"select",a:"を選ぶ"},{w:"evolve",a:"発展する"},{w:"convince",a:"確信させる"},{w:"recall",a:"を思い出す"},{w:"destroy",a:"を破壊する"},{w:"preserve",a:"を保存する"},{w:"organize",a:"を準備する"},{w:"warn",a:"に警告する"},{w:"address",a:"に対処する"},{w:"operate",a:"を操作する"},{w:"participate",a:"参加する"},{w:"surround",a:"を取り巻く"},{w:"flow",a:"流れる"},{w:"bore",a:"を退屈させる"},{w:"complain",a:"不平を言う"},{w:"host",a:"を主催する"},{w:"combine",a:"を結び付ける"},{w:"extend",a:"を伸ばす"},{w:"appreciate",a:"を感謝する"},{w:"target",a:"目標"},{w:"element",a:"要素"},{w:"principle",a:"原則"},{w:"phenomenon",a:"現象"},{w:"atmosphere",a:"大気"},{w:"origin",a:"起源"},{w:"personality",a:"個性"},{w:"capacity",a:"収容能力"},{w:"profit",a:"利益"},{w:"circumstance",a:"状況"},{w:"manner",a:"作法；方法"},{w:"threat",a:"脅威；兆し"},{w:"resident",a:"居住者"},{w:"wealth",a:"富；資源"},{w:"institution",a:"機関；施設"},{w:"authority",a:"当局；権威"},{w:"vote",a:"投票；選挙権"},{w:"sight",a:"光景；名所"},{w:"campaign",a:"運動"},{w:"fund",a:"基金"},{w:"web",a:"ウェブ；巣"},{w:"symbol",a:"象徴；記号"},{w:"analysis",a:"分析"},{w:"version",a:"版；解釈"},{w:"perspective",a:"観点；見方"},{w:"crisis",a:"危機"},{w:"disaster",a:"災害；惨事"},{w:"lecture",a:"講義；講演"},{w:"psychology",a:"心理学"},{w:"gender",a:"性別"},{w:"custom",a:"慣習；税関"},{w:"court",a:"裁判所；中庭"},{w:"desert",a:"砂漠"},{w:"soil",a:"土地；土壌"},{w:"agriculture",a:"農業"},{w:"fossil",a:"化石"},{w:"document",a:"文書；記録"},{w:"vocabulary",a:"語彙"},{w:"intelligent",a:"聡明な"},{w:"conscious",a:"意識して"},{w:"capable",a:"能力がある"},{w:"accurate",a:"正確な"},{w:"fundamental",a:"基本的な"},{w:"artificial",a:"人工の"},{w:"firm",a:"確固たる"},{w:"overall",a:"総合的な"},{w:"rural",a:"田舎の"},{w:"military",a:"軍の"},{w:"nuclear",a:"核の"},{w:"biological",a:"生物学の"},{w:"constant",a:"絶え間ない"},{w:"severe",a:"厳しい"},{w:"visual",a:"視覚の"},{w:"enormous",a:"莫大な"},{w:"convenient",a:"便利な"},{w:"domestic",a:"家庭の；国内の"},{w:"mass",a:"大規模な"},{w:"typical",a:"典型的な"},{w:"overseas",a:"海外へ"},{w:"nevertheless",a:"それにもかかわらず"}] },
+    { name: "S5", full: "Section 5", words: [{w:"demonstrate",a:"を論証する"},{w:"behave",a:"振る舞う"},{w:"educate",a:"を教育する"},{w:"purchase",a:"を購入する"},{w:"recommend",a:"を勧める"},{w:"admit",a:"を認める"},{w:"generate",a:"を生み出す"},{w:"explore",a:"を調査する"},{w:"amaze",a:"をびっくりさせる"},{w:"tear",a:"を引き裂く"},{w:"settle",a:"を解決する"},{w:"afford",a:"をする余裕がある"},{w:"conclude",a:"と結論づける"},{w:"advertise",a:"を宣伝する"},{w:"encounter",a:"に遭遇する"},{w:"remind",a:"に思い出させる"},{w:"locate",a:"に位置する"},{w:"aid",a:"を援助する"},{w:"bite",a:"をかむ"},{w:"deliver",a:"を配達する"},{w:"perceive",a:"に気づく"},{w:"distinguish",a:"を区別する"},{w:"imply",a:"を暗に意味する"},{w:"handle",a:"を処理する"},{w:"praise",a:"を賞賛する"},{w:"appeal",a:"訴える"},{w:"insist",a:"を強く主張する"},{w:"compete",a:"競う"},{w:"rank",a:"を評価する"},{w:"deny",a:"を否定する"},{w:"reject",a:"を拒否する"},{w:"intend",a:"を意図する"},{w:"expose",a:"をさらす"},{w:"favor",a:"に賛成する"},{w:"inspire",a:"を奮起させる"},{w:"propose",a:"を提案する"},{w:"spell",a:"をつづる"},{w:"breathe",a:"呼吸する"},{w:"repair",a:"を修理する"},{w:"consist",a:"から成る"},{w:"comment",a:"意見"},{w:"instruction",a:"指示"},{w:"religion",a:"宗教"},{w:"neighborhood",a:"地域"},{w:"laboratory",a:"実験室"},{w:"presence",a:"存在"},{w:"confidence",a:"自信"},{w:"harm",a:"害"},{w:"instrument",a:"器具"},{w:"category",a:"部類"},{w:"capital",a:"資本"},{w:"outcome",a:"結果"},{w:"notion",a:"概念"},{w:"review",a:"論評"},{w:"trait",a:"特性"},{w:"diversity",a:"多様性"},{w:"victim",a:"犠牲者"},{w:"occasion",a:"場合"},{w:"facility",a:"施設"},{w:"stock",a:"在庫品"},{w:"conference",a:"会議"},{w:"humanity",a:"人類"},{w:"dialect",a:"方言"},{w:"proportion",a:"割合"},{w:"tip",a:"助言"},{w:"lawyer",a:"弁護士"},{w:"stuff",a:"物"},{w:"comfort",a:"快適さ"},{w:"philosophy",a:"哲学"},{w:"mammal",a:"哺乳動物"},{w:"quantity",a:"量"},{w:"landscape",a:"風景"},{w:"tribe",a:"部族"},{w:"organ",a:"器官"},{w:"trial",a:"試み"},{w:"norm",a:"規範"},{w:"code",a:"規範"},{w:"substance",a:"物質"},{w:"multiple",a:"多様な"},{w:"numerous",a:"非常に数の多い"},{w:"narrow",a:"狭い"},{w:"widespread",a:"広範囲にわたる"},{w:"sufficient",a:"十分な"},{w:"proper",a:"適切な"},{w:"linguistic",a:"言語学の"},{w:"annual",a:"年1回の"},{w:"contemporary",a:"現代の"},{w:"contrary",a:"反対の"},{w:"strict",a:"厳しい"},{w:"civil",a:"市民の"},{w:"odd",a:"奇妙な"},{w:"unknown",a:"不明の"},{w:"superior",a:"より優れた"},{w:"sensitive",a:"敏感な"},{w:"violent",a:"激しい"},{w:"virtual",a:"仮想の"},{w:"regardless",a:"かまわない"},{w:"immediate",a:"即座の"},{w:"crucial",a:"重要な"},{w:"somewhat",a:"いくぶん"}] },
+    { name: "S6", full: "Section 6", words: [{w:"interpret",a:"を解釈する"},{w:"translate",a:"を翻訳する"},{w:"concentrate",a:"を集中する"},{w:"request",a:"を要請する"},{w:"criticize",a:"を批判する"},{w:"overcome",a:"を克服する"},{w:"obtain",a:"を得る"},{w:"inform",a:"に知らせる"},{w:"ensure",a:"を確実にする"},{w:"announce",a:"を発表する"},{w:"grant",a:"を与える"},{w:"freeze",a:"凍る"},{w:"oppose",a:"に反対する"},{w:"differ",a:"異なる"},{w:"hate",a:"をひどく嫌う"},{w:"emphasize",a:"を強調する"},{w:"employ",a:"を雇う"},{w:"credit",a:"を帰する"},{w:"transform",a:"を変える"},{w:"construct",a:"を建設する"},{w:"arise",a:"生じる"},{w:"beat",a:"を打ち負かす"},{w:"regret",a:"を後悔する"},{w:"alter",a:"を変える"},{w:"absorb",a:"を吸収する"},{w:"disappoint",a:"を失望させる"},{w:"cure",a:"を治す"},{w:"transport",a:"を輸送する"},{w:"rush",a:"急いで行く"},{w:"hang",a:"を掛ける"},{w:"blame",a:"を責める"},{w:"ban",a:"を禁止する"},{w:"fascinate",a:"を魅了する"},{w:"recover",a:"回復する"},{w:"celebrate",a:"を祝う"},{w:"manufacture",a:"を製造する"},{w:"interact",a:"影響し合う"},{w:"arrange",a:"の段取りをつける"},{w:"adjust",a:"を調整する"},{w:"confirm",a:"を確認する"},{w:"insight",a:"見識"},{w:"innovation",a:"革新"},{w:"budget",a:"予算"},{w:"fee",a:"料金"},{w:"expense",a:"経費"},{w:"debt",a:"借金"},{w:"loan",a:"融資"},{w:"duty",a:"義務"},{w:"alarm",a:"不安"},{w:"emergency",a:"緊急事態"},{w:"democracy",a:"民主主義"},{w:"minister",a:"大臣"},{w:"fellow",a:"仲間"},{w:"candidate",a:"候補者"},{w:"corporation",a:"大企業"},{w:"stereotype",a:"固定観念"},{w:"route",a:"道"},{w:"disorder",a:"障害"},{w:"depression",a:"憂うつ"},{w:"weapon",a:"兵器"},{w:"immigration",a:"移民"},{w:"barrier",a:"障壁"},{w:"disadvantage",a:"不利な点"},{w:"mood",a:"気分"},{w:"motion",a:"動き"},{w:"routine",a:"決まり切った仕事"},{w:"discipline",a:"規律"},{w:"myth",a:"作り話"},{w:"hypothesis",a:"仮説"},{w:"physician",a:"医師"},{w:"client",a:"顧客"},{w:"colony",a:"植民地"},{w:"statistics",a:"統計"},{w:"grain",a:"穀物"},{w:"ingredient",a:"材料"},{w:"treasure",a:"宝物"},{w:"contract",a:"契約"},{w:"welfare",a:"福祉"},{w:"prime",a:"主要な"},{w:"curious",a:"好奇心の強い"},{w:"dramatic",a:"劇的な"},{w:"distinct",a:"明らかに異なる"},{w:"anxious",a:"心配して"},{w:"vital",a:"必要不可欠な"},{w:"conventional",a:"従来の"},{w:"abstract",a:"抽象的な"},{w:"minor",a:"重要でない"},{w:"extraordinary",a:"並はずれた"},{w:"stable",a:"安定した"},{w:"flexible",a:"融通の利く"},{w:"brief",a:"簡潔な"},{w:"aggressive",a:"攻撃的な"},{w:"visible",a:"見える"},{w:"unexpected",a:"思いがけない"},{w:"ethnic",a:"民族の"},{w:"alien",a:"異質の"},{w:"initial",a:"初めの"},{w:"exact",a:"正確な"},{w:"precise",a:"正確な"},{w:"latter",a:"後者の"}] },
+    { name: "S7", full: "Section 7", words: [{w:"commit",a:"献身する"},{w:"stimulate",a:"を刺激する"},{w:"enhance",a:"を高める"},{w:"pursue",a:"を追求する"},{w:"react",a:"反応する"},{w:"disagree",a:"意見が食い違う"},{w:"stare",a:"見つめる"},{w:"abandon",a:"を捨てる"},{w:"quit",a:"をやめる"},{w:"capture",a:"をとらえる"},{w:"transfer",a:"を移す"},{w:"bother",a:"を悩ます"},{w:"persuade",a:"を説得する"},{w:"rent",a:"を賃借りする"},{w:"breed",a:"を繁殖させる"},{w:"invest",a:"を投資する"},{w:"reserve",a:"を予約する"},{w:"trace",a:"をたどる"},{w:"illustrate",a:"を説明する"},{w:"advise",a:"に忠告する"},{w:"convey",a:"を伝える"},{w:"attach",a:"を取り付ける"},{w:"stretch",a:"を伸ばす"},{w:"puzzle",a:"を当惑させる"},{w:"disturb",a:"をかき乱す"},{w:"crash",a:"衝突する"},{w:"cope",a:"うまく処理する"},{w:"permit",a:"を許可する"},{w:"impress",a:"を感動させる"},{w:"suspect",a:"ではないかと思う"},{w:"upset",a:"を動揺させる"},{w:"frighten",a:"を怖がらせる"},{w:"import",a:"を輸入する"},{w:"export",a:"を輸出する"},{w:"investigate",a:"を調査する"},{w:"monitor",a:"を監視する"},{w:"calculate",a:"を計算する"},{w:"eliminate",a:"を取り除く"},{w:"ease",a:"を軽減する"},{w:"launch",a:"を開始する"},{w:"sequence",a:"連続"},{w:"therapy",a:"療法"},{w:"symptom",a:"症状"},{w:"incident",a:"出来事"},{w:"witness",a:"目撃者"},{w:"sum",a:"金額"},{w:"burden",a:"負担"},{w:"tone",a:"口調"},{w:"honor",a:"光栄"},{w:"award",a:"賞"},{w:"priority",a:"優先事項"},{w:"logic",a:"論理"},{w:"minimum",a:"最小限度"},{w:"exception",a:"例外"},{w:"clue",a:"手がかり"},{w:"bond",a:"絆"},{w:"virus",a:"ウイルス"},{w:"surgery",a:"手術"},{w:"insurance",a:"保険"},{w:"frame",a:"枠"},{w:"shelter",a:"避難所"},{w:"territory",a:"領土"},{w:"boundary",a:"境界"},{w:"habitat",a:"生息地"},{w:"district",a:"地区"},{w:"conservation",a:"保護"},{w:"harvest",a:"収穫"},{w:"predator",a:"捕食動物"},{w:"trap",a:"わな"},{w:"trick",a:"こつ"},{w:"fault",a:"責任"},{w:"discount",a:"割引"},{w:"bias",a:"偏見"},{w:"cooperation",a:"協力"},{w:"patent",a:"特許"},{w:"dialogue",a:"対話"},{w:"component",a:"構成要素"},{w:"reputation",a:"評判"},{w:"verbal",a:"言葉の"},{w:"internal",a:"内部の"},{w:"solid",a:"しっかりした"},{w:"remote",a:"遠く離れた"},{w:"principal",a:"主要な"},{w:"sophisticated",a:"高性能の"},{w:"equivalent",a:"等しい"},{w:"rational",a:"理性的な"},{w:"relevant",a:"関係がある"},{w:"absolute",a:"絶対的な"},{w:"frequent",a:"頻繁な"},{w:"permanent",a:"永続的な"},{w:"intense",a:"強烈な"},{w:"meaningful",a:"意味のある"},{w:"evil",a:"邪悪な"},{w:"extinct",a:"絶滅した"},{w:"random",a:"無作為の"},{w:"raw",a:"生の"},{w:"rude",a:"無礼な"},{w:"mere",a:"単なる"},{w:"tropical",a:"熱帯の"},{w:"forth",a:"前へ"}] },
+    { name: "S8", full: "Section 8", words: [{w:"possess",a:"を所有している"},{w:"dominate",a:"を支配する"},{w:"guarantee",a:"を保証する"},{w:"melt",a:"溶ける"},{w:"embarrass",a:"に恥ずかしい思いをさせる"},{w:"discourage",a:"にやる気をなくさせる"},{w:"detect",a:"を感知する"},{w:"devote",a:"をささげる"},{w:"urge",a:"に促す"},{w:"lend",a:"を貸す"},{w:"restrict",a:"を制限する"},{w:"isolate",a:"を孤立させる"},{w:"accompany",a:"に同行する"},{w:"exhaust",a:"を使い尽くす"},{w:"annoy",a:"を悩ます"},{w:"endanger",a:"を危険にさらす"},{w:"acknowledge",a:"を認める"},{w:"admire",a:"に敬服する"},{w:"evaluate",a:"を評価する"},{w:"declare",a:"を宣言する"},{w:"secure",a:"を確保する"},{w:"specialize",a:"専門とする"},{w:"attribute",a:"を帰する"},{w:"pretend",a:"のふりをする"},{w:"bury",a:"を埋める"},{w:"reverse",a:"を逆転させる"},{w:"resist",a:"に抵抗する"},{w:"scare",a:"をおびえさせる"},{w:"imitate",a:"をまねる"},{w:"assist",a:"を援助する"},{w:"resemble",a:"に似ている"},{w:"retire",a:"引退する"},{w:"neglect",a:"をおろそかにする"},{w:"collapse",a:"崩壊する"},{w:"reform",a:"を改革する"},{w:"protest",a:"抗議する"},{w:"owe",a:"に借りがある"},{w:"sustain",a:"を持続させる"},{w:"assign",a:"を割り当てる"},{w:"accomplish",a:"を成し遂げる"},{w:"wisdom",a:"知恵"},{w:"literacy",a:"読み書きの能力"},{w:"heritage",a:"遺産"},{w:"mission",a:"使命"},{w:"license",a:"免許"},{w:"elite",a:"エリート"},{w:"layer",a:"層"},{w:"motor",a:"原動力"},{w:"protein",a:"たんぱく質"},{w:"profession",a:"職業"},{w:"editor",a:"編集者"},{w:"agent",a:"仲介者"},{w:"globe",a:"地球"},{w:"haven",a:"避難所"},{w:"row",a:"列"},{w:"sacrifice",a:"犠牲"},{w:"means",a:"手段"},{w:"session",a:"集まり"},{w:"league",a:"連盟"},{w:"contest",a:"競技"},{w:"guard",a:"警備員"},{w:"opponent",a:"相手"},{w:"glance",a:"ちらっと見ること"},{w:"divorce",a:"離婚"},{w:"tissue",a:"組織"},{w:"liquid",a:"液体"},{w:"inequality",a:"不平等"},{w:"prejudice",a:"偏見"},{w:"justice",a:"公正"},{w:"guideline",a:"指針"},{w:"platform",a:"プラットフォーム"},{w:"sector",a:"部門"},{w:"channel",a:"経路"},{w:"glacier",a:"氷河"},{w:"primate",a:"霊長目の動物"},{w:"usage",a:"用法"},{w:"fortune",a:"財産"},{w:"correlation",a:"相互関係"},{w:"artistic",a:"芸術的な"},{w:"literary",a:"文学の"},{w:"classic",a:"第一級の"},{w:"liberal",a:"自由主義の"},{w:"concrete",a:"具体的な"},{w:"slight",a:"わずかな"},{w:"federal",a:"連邦の"},{w:"primitive",a:"原始的な"},{w:"unfamiliar",a:"不慣れな"},{w:"subjective",a:"主観的な"},{w:"subtle",a:"微妙な"},{w:"plain",a:"明らかな"},{w:"marine",a:"海の"},{w:"apparent",a:"明白な"},{w:"reluctant",a:"気が進まない"},{w:"temporary",a:"一時的な"},{w:"guilty",a:"罪悪感のある"},{w:"royal",a:"王の"},{w:"pure",a:"純粋な"},{w:"incredible",a:"信じられない"},{w:"eager",a:"熱望して"},{w:"adequate",a:"十分な"},{w:"via",a:"〜経由で"}] }
+];
+
+let currentIdx = -1; 
+let weakWords = JSON.parse(localStorage.getItem('weakWords_v7') || '[]');
+let isShuffle = false;
+let scrollInterval = null;
+let currentSpeed = 0.0;
+
+// タブ生成
+const tabsContainer = document.getElementById('tabs');
+sections.forEach((s, i) => {
+    const btn = document.createElement('button');
+    btn.className = 'tab-btn';
+    btn.innerText = s.name;
+    btn.onclick = () => { currentIdx = i; updateView(); };
+    tabsContainer.appendChild(btn);
+});
+
+window.onscroll = function() { updateProgressBar(); };
+
+function updateProgressBar() {
+    const winScroll = document.body.scrollTop || document.documentElement.scrollTop;
+    const height = document.documentElement.scrollHeight - document.documentElement.clientHeight;
+    const scrolled = (winScroll / height) * 100;
+    document.getElementById("progress-bar").style.width = (height <= 0 ? 0 : scrolled) + "%";
+}
+
+function setShuffle(val) {
+    isShuffle = val;
+    document.getElementById('shuffle-on').classList.toggle('active', isShuffle);
+    document.getElementById('shuffle-off').classList.toggle('active', !isShuffle);
+    updateView();
+}
+
+function updateView() {
+    const title = document.getElementById('view-title');
+    const list = document.getElementById('word-list');
+    const btns = document.querySelectorAll('.tab-btn');
+    
+    btns.forEach((b, i) => b.classList.toggle('active', currentIdx === i - 1));
+    document.getElementById('btn-weak').classList.toggle('active', currentIdx === -1);
+    
+    list.innerHTML = '';
+    let targetWords = (currentIdx === -1) ? [...weakWords] : [...sections[currentIdx].words];
+    title.innerText = (currentIdx === -1) ? "🔥 苦手な単語" : sections[currentIdx].full;
+
+    if (targetWords.length === 0) {
+        list.innerHTML = '<tr><td colspan="3" style="text-align:center; padding:100px; letter-spacing:0.1em;">データがありません。</td></tr>';
+        document.getElementById("progress-bar").style.width = "0%";
+        return;
+    }
+
+    if (isShuffle) {
+        for (let i = targetWords.length - 1; i > 0; i--) {
+            const j = Math.floor(Math.random() * (i + 1));
+            [targetWords[i], targetWords[j]] = [targetWords[j], targetWords[i]];
+        }
+    }
+
+    targetWords.forEach((w, index) => {
+        const tr = document.createElement('tr');
+        const isW = weakWords.some(x => x.w === w.w);
+        tr.innerHTML = `
+            <td><span class="fav-star ${isW ? 'active' : ''}" onclick="toggleWeak('${w.w}', '${w.a}', this)">★</span></td>
+            <td class="word-eng" onclick="speak('${w.w}')">
+                <span class="word-no">${index + 1}.</span>${w.w}
+            </td>
+            <td><span class="word-jp">${w.a}</span></td>
+        `;
+        list.appendChild(tr);
+    });
+    stopScroll();
+    window.scrollTo(0, 0);
+    setTimeout(updateProgressBar, 100);
+}
+
+function toggleWeak(w, a, el) {
+    const idx = weakWords.findIndex(x => x.w === w);
+    if (idx > -1) { weakWords.splice(idx, 1); el.classList.remove('active'); }
+    else { weakWords.push({w, a}); el.classList.add('active'); }
+    localStorage.setItem('weakWords_v7', JSON.stringify(weakWords));
+    if (currentIdx === -1) updateView();
+}
+
+function showWeak() { currentIdx = -1; updateView(); }
+
+function adjustSpeed(delta) {
+    currentSpeed = Math.max(0, currentSpeed + delta);
+    updateSpeedUI();
+    startScrolling();
+}
+
+function toggleStop() {
+    currentSpeed = 0;
+    updateSpeedUI();
+    clearInterval(scrollInterval);
+}
+
+function updateSpeedUI() {
+    document.getElementById('speed-val').innerText = `速度: ${currentSpeed.toFixed(1)}`;
+    document.getElementById('stop-btn').classList.toggle('active', currentSpeed === 0);
+}
+
+function startScrolling() {
+    clearInterval(scrollInterval);
+    if (currentSpeed <= 0) return;
+    scrollInterval = setInterval(() => { window.scrollBy(0, 1); }, 50 / currentSpeed);
+}
+
+function stopScroll() {
+    currentSpeed = 0;
+    updateSpeedUI();
+    clearInterval(scrollInterval);
+}
+
+function speak(t) {
+    const u = new SpeechSynthesisUtterance(t);
+    u.lang = 'en-US';
+    speechSynthesis.speak(u);
+}
+
+// --- 赤シート位置保存ロジック ---
+const sheet = document.getElementById('red-sheet');
+let isDragging = false, offset = {x:0, y:0};
+
+// 保存された位置を読み込む
+function loadSheetPosition() {
+    const savedPos = localStorage.getItem('redSheetPos');
+    if (savedPos) {
+        const { top, left } = JSON.parse(savedPos);
+        sheet.style.top = top;
+        sheet.style.left = left;
+        sheet.style.transform = 'none'; // 保存位置を使う場合は中央寄せを解除
+    }
+}
+
+const moveStart = (e) => {
+    isDragging = true;
+    const p = e.touches ? e.touches[0] : e;
+    const r = sheet.getBoundingClientRect();
+    offset.x = p.clientX - r.left;
+    offset.y = p.clientY - r.top;
+    sheet.style.transform = 'none'; // ドラッグ開始時に中央寄せを解除
+};
+
+const move = (e) => {
+    if (!isDragging) return;
+    const p = e.touches ? e.touches[0] : e;
+    const newTop = (p.clientY - offset.y) + 'px';
+    const newLeft = (p.clientX - offset.x) + 'px';
+    
+    sheet.style.top = newTop;
+    sheet.style.left = newLeft;
+};
+
+const moveEnd = () => {
+    if (isDragging) {
+        isDragging = false;
+        // 位置をlocalStorageに保存
+        localStorage.setItem('redSheetPos', JSON.stringify({
+            top: sheet.style.top,
+            left: sheet.style.left
+        }));
+    }
+};
+
+sheet.addEventListener('mousedown', moveStart);
+sheet.addEventListener('touchstart', moveStart, {passive: false});
+window.addEventListener('mousemove', move);
+window.addEventListener('touchmove', (e) => {
+    if (isDragging) e.preventDefault();
+    move(e);
+}, {passive: false});
+window.addEventListener('mouseup', moveEnd);
+window.addEventListener('touchend', moveEnd);
+
+// 初回実行
+loadSheetPosition();
+showWeak();
+</script>
+</body>
+</html>
